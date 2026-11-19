@@ -46,7 +46,7 @@ function connectSocket() {
   socket.on("connect", () => setConnection("متصل"));
   socket.on("typing:update", event => {
     if (event.conversationId !== active || event.userId === currentUser?.id) return;
-    $("headStatus").textContent = event.active ? (event.displayName + " يكتب الآن…") : (chats.find(c=>c.id===active)?.group ? "مجموعة" : "متصل");
+    $("headStatus").textContent = event.active ? (event.displayName + " يكتب الآن…") : (chats.find(c=>c.id===active)?.group ? "مجموعة" : "محادثة شخصية");
   });
   socket.on("message:new", message => {
     const chat = chats.find(c => c.id === message.conversation_id);
@@ -71,7 +71,7 @@ function mapConversation(c) {
   const name = isGroup ? (c.title || "مجموعة") : (other?.displayName || other?.username || "محادثة");
   const last = c.last_message;
   return {
-    id:c.id,name,initial:name.slice(0,1),color:isGroup?"#356b83":"#72548c",group:isGroup,unread:0,
+    id:c.id,name,initial:name.slice(0,1),color:isGroup?"#356b83":"#72548c",group:isGroup,
     time:last ? new Date(last.created_at).toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}) : "",
     preview:last?.body || "ابدأ المحادثة",unread:Number(c.unread_count)||0,messages:[]
   };

@@ -1,10 +1,10 @@
-name: NANDO checks
+name: THUNDER checks
 
 on:
   push:
-    branches: [telegram-web]
+    branches: [thunder-messenger]
   pull_request:
-    branches: [telegram-web]
+    branches: [thunder-messenger]
 
 jobs:
   syntax:
@@ -23,4 +23,4 @@ jobs:
       - name: Validate package metadata
         run: node -e "JSON.parse(require('node:fs').readFileSync('package.json', 'utf8'))"
 
-# Keep this workflow on the dedicated NANDO integration branch.
+# Keep this workflow on the dedicated THUNDER messenger branch.

@@ -115,7 +115,7 @@ async function bootRemote() {
     chats = [];
     showAuth(true);
     setAuthMode("login");
-    setConnection("غير متصل — جارٍ إعادة المحاولة");
+    setConnection("غير متصل");
     $("authError").textContent = "تعذر الاتصال بخادم THUNDER. حدّث الصفحة بعد قليل؛ لن نعرض محادثات وهمية أو نحفظ رسائلك محلياً.";
     drawList();
   }

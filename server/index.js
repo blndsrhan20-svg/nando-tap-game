@@ -271,7 +271,7 @@ io.on("connection", (socket) => {
 
 const webRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 app.use((req, res, next) => {
-  if (/^\\/(?:server|docs|\\.git|\\.env|package\\.json|README\\.md|\\.gitmodules)(?:\\/|$)/i.test(req.path)) return res.sendStatus(404);
+  if (/^\/(?:server|docs|\.git|\.env|package\.json|README\.md|\.gitmodules)(?:\/|$)/i.test(req.path)) return res.sendStatus(404);
   next();
 });
 app.use(express.static(webRoot, { dotfiles: "deny", index: "index.html" }));

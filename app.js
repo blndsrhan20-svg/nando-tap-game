@@ -44,14 +44,20 @@ function connectSocket() {
   socket = window.io(API_ROOT, {auth:{token}, transports:["websocket","polling"]});
   socket.on("connect_error", () => setConnection("الاتصال المباشر غير متاح"));
   socket.on("connect", () => setConnection("متصل"));
+  socket.on("typing:update", event => {
+    if (event.conversationId !== active || event.userId === currentUser?.id) return;
+    $("headStatus").textContent = event.active ? (event.displayName + " يكتب الآن…") : (chats.find(c=>c.id===active)?.group ? "مجموعة" : "متصل");
+  });
   socket.on("message:new", message => {
     const chat = chats.find(c => c.id === message.conversation_id);
     if (!chat) { loadConversations(); return; }
     if (!chat.messages.some(m => m.id === message.id)) chat.messages.push(toClientMessage(message));
     chat.preview = message.body;
     chat.time = new Date(message.created_at).toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"});
-    if (active === chat.id) drawMessages();
-    else chat.unread = (chat.unread || 0) + 1;
+    if (active === chat.id) {
+      drawMessages();
+      api(`/api/conversations/${encodeURIComponent(chat.id)}/read`,{method:"POST"}).catch(()=>{});
+    } else chat.unread = (chat.unread || 0) + 1;
     drawList();
   });
 }
@@ -67,7 +73,7 @@ function mapConversation(c) {
   return {
     id:c.id,name,initial:name.slice(0,1),color:isGroup?"#356b83":"#72548c",group:isGroup,unread:0,
     time:last ? new Date(last.created_at).toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}) : "",
-    preview:last?.body || "ابدأ المحادثة",messages:[]
+    preview:last?.body || "ابدأ المحادثة",unread:Number(c.unread_count)||0,messages:[]
   };
 }
 async function loadConversations() {
@@ -147,6 +153,7 @@ async function openChat(id) {
       const result = await api(`/api/conversations/${encodeURIComponent(id)}/messages?limit=60`);
       c.messages = result.messages.map(toClientMessage);
       socket?.emit("conversation:join",id);
+      await api(`/api/conversations/${encodeURIComponent(id)}/read`,{method:"POST"});
     } catch (error) { setConnection(error.message); }
   }
   drawMessages(); drawList(); persist(); $("messageInput").focus();
@@ -176,6 +183,13 @@ $("sendForm").addEventListener("submit", async event => {
   }
   $("messageInput").value = ""; drawMessages(); drawList();
 });
+let typingTimer = null;
+$("messageInput").addEventListener("input", () => {
+  if (!socket?.connected || !active) return;
+  socket.emit("typing:update",{conversationId:active,active:true});
+  clearTimeout(typingTimer);
+  typingTimer = setTimeout(() => socket?.emit("typing:update",{conversationId:active,active:false}),1100);
+});
 $("search").addEventListener("input",drawList);
 document.querySelectorAll(".filter").forEach(b => b.onclick = () => {
   filter = b.dataset.filter;
@@ -185,14 +199,34 @@ document.querySelectorAll(".filter").forEach(b => b.onclick = () => {
 $("backBtn").onclick = () => document.querySelector(".app").classList.remove("open-thread");
 $("newChat").onclick = async () => {
   if (!remoteMode) { alert("اتصال الخادم غير متاح حالياً. حاول تحديث الصفحة."); return; }
-  const username = prompt("اكتب اسم المستخدم الذي تريد مراسلته:");
-  if (!username?.trim()) return;
+  const makeGroup = confirm("موافق = إنشاء مجموعة\nإلغاء = محادثة شخصية");
   try {
-    const found = await api("/api/users/search?q="+encodeURIComponent(username.trim()));
-    const person = found.users.find(u => u.username.toLowerCase() === username.trim().replace(/^@/,"").toLowerCase());
-    if (!person) { alert("لم يتم العثور على اسم المستخدم."); return; }
-    const result = await api("/api/conversations",{method:"POST",body:JSON.stringify({type:"direct",memberUserIds:[person.id]})});
-    await loadConversations(); openChat(result.conversation.id);
+    if (makeGroup) {
+      const title = prompt("اسم المجموعة:");
+      if (!title?.trim()) return;
+      const raw = prompt("أسماء المستخدمين لإضافتهم، افصل بينها بفاصلة:");
+      if (!raw?.trim()) return;
+      const names = [...new Set(raw.split(",").map(x=>x.trim().replace(/^@/,"").toLowerCase()).filter(Boolean))];
+      if (!names.length || names.length > 99) { alert("أدخل من 1 إلى 99 مستخدماً."); return; }
+      const ids = [];
+      for (const username of names) {
+        const found = await api("/api/users/search?q="+encodeURIComponent(username));
+        const person = found.users.find(u => u.username.toLowerCase() === username);
+        if (!person) throw new Error("لم نعثر على المستخدم @"+username);
+        ids.push(person.id);
+      }
+      const result = await api("/api/conversations",{method:"POST",body:JSON.stringify({type:"group",title:title.trim(),memberUserIds:ids})});
+      await loadConversations(); openChat(result.conversation.id);
+    } else {
+      const username = prompt("اكتب اسم المستخدم الذي تريد مراسلته:");
+      if (!username?.trim()) return;
+      const normalized = username.trim().replace(/^@/,"").toLowerCase();
+      const found = await api("/api/users/search?q="+encodeURIComponent(normalized));
+      const person = found.users.find(u => u.username.toLowerCase() === normalized);
+      if (!person) { alert("لم يتم العثور على اسم المستخدم."); return; }
+      const result = await api("/api/conversations",{method:"POST",body:JSON.stringify({type:"direct",memberUserIds:[person.id]})});
+      await loadConversations(); openChat(result.conversation.id);
+    }
   } catch (error) { alert(error.message); }
 };
 $("attachBtn").onclick = () => $("fileInput").click();

@@ -1,22 +1,14 @@
 const $ = (id) => document.getElementById(id);
-const STORE_KEY = "thunder_messenger_v1";
 const API_BASE = (window.THUNDER_CONFIG?.apiUrl || "").replace(/\/$/, "");
 const API_ROOT = API_BASE || window.location.origin;
-const seedChats = [
-  {id:1,name:"فريق THUNDER",initial:"N",color:"#356b83",group:true,unread:2,time:"23:40",preview:"أهلاً بالجميع!",messages:[{text:"أهلاً بالجميع!",mine:false,time:"23:40"}]},
-  {id:2,name:"أحمد",initial:"أ",color:"#72548c",group:false,unread:1,time:"22:18",preview:"شلونك؟",messages:[{text:"شلونك؟",mine:false,time:"22:18"}]},
-  {id:3,name:"ملاحظاتي",initial:"✎",color:"#47745e",group:false,unread:0,time:"أمس",preview:"مساحة خاصة لحفظ أفكارك",messages:[]}
-];
-let saved = {};
-try { saved = JSON.parse(localStorage.getItem(STORE_KEY) || "{}") || {}; } catch {}
-let chats = Array.isArray(saved.chats) ? saved.chats : seedChats;
+let chats = [];
 let active = null, filter = "all", mode = "login", remoteMode = false, token = sessionStorage.getItem("thunder_token"), currentUser = null, socket = null;
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 }
 function nowTime() { return new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}); }
-function persist() { try { localStorage.setItem(STORE_KEY, JSON.stringify({chats})); } catch {} }
+function persist() { /* Remote conversations are persisted by the API. */ }
 function setConnection(text) { $("connectionLabel").textContent = text; }
 async function api(path, options = {}) {
   const response = await fetch(API_ROOT + path, {
@@ -100,8 +92,11 @@ async function bootRemote() {
     }
   } catch {
     remoteMode = false;
-    showAuth(false);
-    setConnection("نسخة تجريبية محلية — غير متصلة بقاعدة بيانات");
+    chats = [];
+    showAuth(true);
+    setAuthMode("login");
+    setConnection("الخادم غير متاح");
+    $("authError").textContent = "تعذر الاتصال بخادم THUNDER. حدّث الصفحة بعد قليل؛ لن نعرض محادثات وهمية أو نحفظ رسائلك محلياً.";
     drawList();
   }
 }
@@ -189,13 +184,7 @@ document.querySelectorAll(".filter").forEach(b => b.onclick = () => {
 });
 $("backBtn").onclick = () => document.querySelector(".app").classList.remove("open-thread");
 $("newChat").onclick = async () => {
-  if (!remoteMode) {
-    const name = prompt("اسم المحادثة الجديدة:");
-    if (!name?.trim()) return;
-    const id = Math.max(0,...chats.map(c => Number(c.id)||0))+1;
-    chats.unshift({id,name:name.trim(),initial:name.trim()[0],color:"#426b8d",unread:0,time:"الآن",preview:"محادثة جديدة",messages:[]});
-    persist(); drawList(); openChat(id); return;
-  }
+  if (!remoteMode) { alert("اتصال الخادم غير متاح حالياً. حاول تحديث الصفحة."); return; }
   const username = prompt("اكتب اسم المستخدم الذي تريد مراسلته:");
   if (!username?.trim()) return;
   try {
@@ -224,11 +213,11 @@ $("accountBtn").onclick = () => {
       token = null; currentUser = null; sessionStorage.removeItem("thunder_token");
       socket?.disconnect(); chats = []; active = null; showAuth(true); setAuthMode("login");
     }
-  } else alert("THUNDER Messenger — نسخة تجريبية محلية.");
+  } else alert("سجّل الدخول بعد استعادة الاتصال بالخادم.");
 };
 $("menuBtn").onclick = () => {
   if (remoteMode && currentUser) alert("حسابك: @"+currentUser.username);
-  else alert("THUNDER Messenger — نسخة ويب تجريبية. المحادثات محفوظة على هذا الجهاز فقط.");
+  else alert("الخادم غير متاح. حدّث الصفحة وحاول مجدداً.");
 };
 drawList();
 bootRemote();

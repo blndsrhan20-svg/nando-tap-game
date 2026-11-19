@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#10140f" />
+  <title>NANDO TAP</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <main class="app">
+    <header class="topbar"><div class="brand"><span class="brand-mark">N</span><div><strong>NANDO TAP</strong><small>اضغط واجمع وارتقِ</small></div></div><div class="level">المستوى <b id="level">1</b></div></header>
+    <section class="balance"><span>رصيدك</span><strong><span id="coins">0</span> <i>🪙</i></strong><small>عملة اللعبة</small></section>
+    <section class="tap-zone">
+      <div class="tap-hint">اضغط على الشخصية لجمع العملات</div>
+      <button id="tap" class="character" aria-label="اجمع العملات"><span class="spark">✦</span><span class="hamster">🐹</span></button>
+      <div class="energy"><div class="energy-label"><span>الطاقة</span><b><span id="energy">500</span> / 500</b></div><div class="bar"><span id="energy-bar"></span></div></div>
+    </section>
+    <section class="upgrade-card"><div><b>ترقية قوة النقر</b><small>اربح عملات أكثر مع كل ضغطة</small></div><button id="upgrade">تطوير · <span id="upgrade-cost">50</span> 🪙</button></section>
+    <nav class="bottom-nav"><span class="active">🏠<small>الرئيسية</small></span><span>🚀<small>التطوير</small></span><span>🎯<small>المهام</small></span><span>👤<small>حسابي</small></span></nav>
+  </main>
+  <script src="./app.js"></script>
+</body>
+</html>

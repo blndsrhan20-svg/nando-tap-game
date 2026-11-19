@@ -1,1 +1,78 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#17212b"><title>NANDO — Messenger</title><link rel="stylesheet" href="style.css"></head><body><div class="app"><aside class="sidebar"><header class="topbar"><button class="icon" id="menuBtn">☰</button><div class="brand"><span class="brandmark">N</span><b>NANDO</b></div><button class="icon" id="newChat">＋</button></header><div class="search"><span>⌕</span><input id="search" placeholder="بحث" autocomplete="off"></div><nav class="filters"><button class="filter active" data-filter="all">الكل</button><button class="filter" data-filter="unread">غير مقروءة</button><button class="filter" data-filter="groups">مجموعات</button></nav><div class="chatlist" id="chatList"></div><footer class="sidefoot"><span class="online-dot"></span> مراسلة سريعة وآمنة</footer></aside><main class="conversation"><section class="welcome" id="welcome"><div class="welcome-logo">N</div><h1>مرحباً بك في NANDO</h1><p>مراسلاتك، مجموعاتك وملفاتك في مكان واحد.</p><small>اختر محادثة للبدء</small></section><section class="thread hidden" id="thread"><header class="thread-head"><button class="icon back" id="backBtn">‹</button><div class="avatar" id="headAvatar"></div><div class="person"><b id="headName"></b><small id="headStatus">متصل الآن</small></div><button class="icon">⌕</button><button class="icon">⋮</button></header><div class="messages" id="messages"></div><form class="composer" id="sendForm"><button type="button" class="icon attach" id="attachBtn">＋</button><input id="messageInput" placeholder="اكتب رسالة..." autocomplete="off"><button class="send" aria-label="إرسال">➤</button><input type="file" id="fileInput" hidden></form></section></main></div><script src="app.js"></script></body></html>
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#111827">
+  <meta name="description" content="THUNDER Messenger — مراسلة عربية">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css">
+  <title>THUNDER — Messenger</title>
+</head>
+<body>
+  <section class="auth-screen hidden" id="authScreen">
+    <div class="auth-card">
+      <div class="welcome-logo">⚡</div>
+      <h1>THUNDER</h1>
+      <p class="auth-subtitle">مراسلاتك في مكان واحد</p>
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab active" data-mode="login">تسجيل الدخول</button>
+        <button type="button" class="auth-tab" data-mode="register">إنشاء حساب</button>
+      </div>
+      <form id="authForm">
+        <label id="displayNameField" class="hidden">الاسم الظاهر<input id="displayNameInput" maxlength="64" autocomplete="name"></label>
+        <label>اسم المستخدم أو البريد<input id="identityInput" required minlength="3" maxlength="254" autocomplete="username"></label>
+        <label id="emailField" class="hidden">البريد الإلكتروني<input id="emailInput" type="email" autocomplete="email"></label>
+        <label id="usernameField" class="hidden">اسم المستخدم<input id="usernameInput" maxlength="32" autocomplete="username" placeholder="بالإنجليزية والأرقام و _"></label>
+        <label>كلمة المرور<input id="passwordInput" type="password" required minlength="8" maxlength="72" autocomplete="current-password"></label>
+        <button class="auth-submit" type="submit" id="authSubmit">دخول</button>
+        <p id="authError" class="auth-error" role="alert"></p>
+      </form>
+      <small>لا تشارك كلمة مرورك مع أي شخص.</small>
+    </div>
+  </section>
+
+  <div class="app" id="app">
+    <aside class="sidebar">
+      <header class="topbar">
+        <button class="icon" id="menuBtn" aria-label="القائمة">☰</button>
+        <div class="brand"><span class="brandmark">⚡</span><b>THUNDER</b></div>
+        <button class="icon" id="newChat" aria-label="محادثة جديدة">＋</button>
+      </header>
+      <div class="search"><span>⌕</span><input id="search" placeholder="بحث" autocomplete="off"></div>
+      <nav class="filters">
+        <button class="filter active" data-filter="all">الكل</button>
+        <button class="filter" data-filter="unread">غير مقروءة</button>
+        <button class="filter" data-filter="groups">مجموعات</button>
+      </nav>
+      <div class="chatlist" id="chatList"></div>
+      <footer class="sidefoot"><span class="online-dot"></span><span id="connectionLabel">نسخة تجريبية محلية</span></footer>
+    </aside>
+    <main class="conversation">
+      <section class="welcome" id="welcome">
+        <div class="welcome-logo">⚡</div>
+        <h1>مرحباً بك في THUNDER</h1>
+        <p>مراسلاتك، مجموعاتك وملفاتك في مكان واحد.</p>
+        <small>اختر محادثة للبدء</small>
+      </section>
+      <section class="thread hidden" id="thread">
+        <header class="thread-head">
+          <button class="icon back" id="backBtn" aria-label="رجوع">‹</button>
+          <div class="avatar" id="headAvatar"></div>
+          <div class="person"><b id="headName"></b><small id="headStatus">محادثة شخصية</small></div>
+          <button class="icon" id="accountBtn" aria-label="الحساب">⋮</button>
+        </header>
+        <div class="messages" id="messages"></div>
+        <form class="composer" id="sendForm">
+          <button type="button" class="icon attach" id="attachBtn" aria-label="إرفاق ملف">＋</button>
+          <input id="messageInput" placeholder="اكتب رسالة..." autocomplete="off" maxlength="4000">
+          <button class="send" aria-label="إرسال">➤</button>
+          <input type="file" id="fileInput" hidden>
+        </form>
+      </section>
+    </main>
+  </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

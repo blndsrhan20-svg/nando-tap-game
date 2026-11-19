@@ -1,22 +1,28 @@
 const $ = (id) => document.getElementById(id);
-const STORE_KEY = "thunder_messenger_v1";
 const API_BASE = (window.THUNDER_CONFIG?.apiUrl || "").replace(/\/$/, "");
 const API_ROOT = API_BASE || window.location.origin;
-const seedChats = [
-  {id:1,name:"فريق THUNDER",initial:"N",color:"#356b83",group:true,unread:2,time:"23:40",preview:"أهلاً بالجميع!",messages:[{text:"أهلاً بالجميع!",mine:false,time:"23:40"}]},
-  {id:2,name:"أحمد",initial:"أ",color:"#72548c",group:false,unread:1,time:"22:18",preview:"شلونك؟",messages:[{text:"شلونك؟",mine:false,time:"22:18"}]},
-  {id:3,name:"ملاحظاتي",initial:"✎",color:"#47745e",group:false,unread:0,time:"أمس",preview:"مساحة خاصة لحفظ أفكارك",messages:[]}
-];
-let saved = {};
-try { saved = JSON.parse(localStorage.getItem(STORE_KEY) || "{}") || {}; } catch {}
-let chats = Array.isArray(saved.chats) ? saved.chats : seedChats;
+let chats = [];
 let active = null, filter = "all", mode = "login", remoteMode = false, token = sessionStorage.getItem("thunder_token"), currentUser = null, socket = null;
+
+function applyTheme(theme) {
+  const selected = theme === "light" || theme === "dark" ? theme : (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+  document.documentElement.dataset.theme = selected;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", selected === "light" ? "#ffffff" : "#111827");
+  const button = $("themeToggle");
+  if (button) { button.textContent = selected === "light" ? "☾" : "☀"; button.setAttribute("aria-label", selected === "light" ? "تفعيل المظهر الداكن" : "تفعيل المظهر الفاتح"); }
+}
+applyTheme(localStorage.getItem("thunder_theme") || "system");
+$("themeToggle")?.addEventListener("click", () => {
+  const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  localStorage.setItem("thunder_theme", next);
+  applyTheme(next);
+});
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 }
 function nowTime() { return new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}); }
-function persist() { try { localStorage.setItem(STORE_KEY, JSON.stringify({chats})); } catch {} }
+function persist() { /* Remote conversations are persisted by the API. */ }
 function setConnection(text) { $("connectionLabel").textContent = text; }
 async function api(path, options = {}) {
   const response = await fetch(API_ROOT + path, {
@@ -50,16 +56,22 @@ function connectSocket() {
   if (!window.io || !token) return;
   if (socket) socket.disconnect();
   socket = window.io(API_ROOT, {auth:{token}, transports:["websocket","polling"]});
-  socket.on("connect_error", () => setConnection("الاتصال المباشر غير متاح"));
+  socket.on("connect_error", () => setConnection("الاتصال المباشر منقطع"));
   socket.on("connect", () => setConnection("متصل"));
+  socket.on("typing:update", event => {
+    if (event.conversationId !== active || event.userId === currentUser?.id) return;
+    $("headStatus").textContent = event.active ? (event.displayName + " يكتب الآن…") : (chats.find(c=>c.id===active)?.group ? "مجموعة" : "محادثة شخصية");
+  });
   socket.on("message:new", message => {
     const chat = chats.find(c => c.id === message.conversation_id);
     if (!chat) { loadConversations(); return; }
     if (!chat.messages.some(m => m.id === message.id)) chat.messages.push(toClientMessage(message));
     chat.preview = message.body;
     chat.time = new Date(message.created_at).toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"});
-    if (active === chat.id) drawMessages();
-    else chat.unread = (chat.unread || 0) + 1;
+    if (active === chat.id) {
+      drawMessages();
+      api(`/api/conversations/${encodeURIComponent(chat.id)}/read`,{method:"POST"}).catch(()=>{});
+    } else chat.unread = (chat.unread || 0) + 1;
     drawList();
   });
 }
@@ -73,9 +85,9 @@ function mapConversation(c) {
   const name = isGroup ? (c.title || "مجموعة") : (other?.displayName || other?.username || "محادثة");
   const last = c.last_message;
   return {
-    id:c.id,name,initial:name.slice(0,1),color:isGroup?"#356b83":"#72548c",group:isGroup,unread:0,
+    id:c.id,name,initial:name.slice(0,1),color:isGroup?"#356b83":"#72548c",group:isGroup,
     time:last ? new Date(last.created_at).toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}) : "",
-    preview:last?.body || "ابدأ المحادثة",messages:[]
+    preview:last?.body || "ابدأ المحادثة",unread:Number(c.unread_count)||0,messages:[]
   };
 }
 async function loadConversations() {
@@ -87,7 +99,7 @@ async function bootRemote() {
   try {
     await api("/health");
     remoteMode = true;
-    setConnection("قاعدة البيانات متصلة");
+    setConnection("متصل بالخادم");
     if (!token) { showAuth(true); return; }
     try {
       const data = await api("/api/auth/me");
@@ -100,8 +112,11 @@ async function bootRemote() {
     }
   } catch {
     remoteMode = false;
-    showAuth(false);
-    setConnection("نسخة تجريبية محلية — غير متصلة بقاعدة بيانات");
+    chats = [];
+    showAuth(true);
+    setAuthMode("login");
+    setConnection("غير متصل");
+    $("authError").textContent = "تعذر الاتصال بخادم THUNDER. حدّث الصفحة بعد قليل؛ لن نعرض محادثات وهمية أو نحفظ رسائلك محلياً.";
     drawList();
   }
 }
@@ -132,7 +147,7 @@ $("authForm").addEventListener("submit", async event => {
 
 function drawList() {
   const q = $("search").value.trim().toLowerCase();
-  const list = chats.filter(c => (filter==="all" || (filter==="unread"&&c.unread) || (filter==="groups"&&c.group)) && c.name.toLowerCase().includes(q));
+  const list = chats.filter(c => (filter==="all" || (filter==="unread"&&c.unread) || (filter==="groups"&&c.group) || (filter==="personal"&&!c.group) || (filter==="channels"&&c.channel)) && c.name.toLowerCase().includes(q));
   $("chatList").innerHTML = list.length ? list.map(c =>
     `<div class="chat ${active===c.id?"selected":""}" data-id="${escapeHtml(c.id)}"><div class="avatar" style="background:${c.color}">${escapeHtml(c.initial)}</div><div class="chatinfo"><div class="chatline"><b>${escapeHtml(c.name)}</b><span class="time">${escapeHtml(c.time)}</span></div><div class="chatline"><span class="preview">${escapeHtml(c.preview)}</span>${c.unread?`<span class="badge">${c.unread}</span>`:""}</div></div></div>`
   ).join("") : '<div class="empty">لا توجد محادثات</div>';
@@ -152,6 +167,7 @@ async function openChat(id) {
       const result = await api(`/api/conversations/${encodeURIComponent(id)}/messages?limit=60`);
       c.messages = result.messages.map(toClientMessage);
       socket?.emit("conversation:join",id);
+      await api(`/api/conversations/${encodeURIComponent(id)}/read`,{method:"POST"});
     } catch (error) { setConnection(error.message); }
   }
   drawMessages(); drawList(); persist(); $("messageInput").focus();
@@ -176,10 +192,17 @@ $("sendForm").addEventListener("submit", async event => {
       c.preview = text; c.time = nowTime();
     } catch (error) { setConnection(error.message); return; }
   } else {
-    c.messages.push({text,mine:true,time:nowTime()}); c.preview = text; c.time = nowTime();
-    persist();
+    setConnection("غير متصل — لم تُرسل الرسالة");
+    return;
   }
   $("messageInput").value = ""; drawMessages(); drawList();
+});
+let typingTimer = null;
+$("messageInput").addEventListener("input", () => {
+  if (!socket?.connected || !active) return;
+  socket.emit("typing:update",{conversationId:active,active:true});
+  clearTimeout(typingTimer);
+  typingTimer = setTimeout(() => socket?.emit("typing:update",{conversationId:active,active:false}),1100);
 });
 $("search").addEventListener("input",drawList);
 document.querySelectorAll(".filter").forEach(b => b.onclick = () => {
@@ -189,33 +212,43 @@ document.querySelectorAll(".filter").forEach(b => b.onclick = () => {
 });
 $("backBtn").onclick = () => document.querySelector(".app").classList.remove("open-thread");
 $("newChat").onclick = async () => {
-  if (!remoteMode) {
-    const name = prompt("اسم المحادثة الجديدة:");
-    if (!name?.trim()) return;
-    const id = Math.max(0,...chats.map(c => Number(c.id)||0))+1;
-    chats.unshift({id,name:name.trim(),initial:name.trim()[0],color:"#426b8d",unread:0,time:"الآن",preview:"محادثة جديدة",messages:[]});
-    persist(); drawList(); openChat(id); return;
-  }
-  const username = prompt("اكتب اسم المستخدم الذي تريد مراسلته:");
-  if (!username?.trim()) return;
+  if (!remoteMode) { alert("اتصال الخادم غير متاح حالياً. حاول تحديث الصفحة."); return; }
+  const makeGroup = confirm("موافق = إنشاء مجموعة\nإلغاء = محادثة شخصية");
   try {
-    const found = await api("/api/users/search?q="+encodeURIComponent(username.trim()));
-    const person = found.users.find(u => u.username.toLowerCase() === username.trim().replace(/^@/,"").toLowerCase());
-    if (!person) { alert("لم يتم العثور على اسم المستخدم."); return; }
-    const result = await api("/api/conversations",{method:"POST",body:JSON.stringify({type:"direct",memberUserIds:[person.id]})});
-    await loadConversations(); openChat(result.conversation.id);
+    if (makeGroup) {
+      const title = prompt("اسم المجموعة:");
+      if (!title?.trim()) return;
+      const raw = prompt("أسماء المستخدمين لإضافتهم، افصل بينها بفاصلة:");
+      if (!raw?.trim()) return;
+      const names = [...new Set(raw.split(",").map(x=>x.trim().replace(/^@/,"").toLowerCase()).filter(Boolean))];
+      if (!names.length || names.length > 99) { alert("أدخل من 1 إلى 99 مستخدماً."); return; }
+      const ids = [];
+      for (const username of names) {
+        const found = await api("/api/users/search?q="+encodeURIComponent(username));
+        const person = found.users.find(u => u.username.toLowerCase() === username);
+        if (!person) throw new Error("لم نعثر على المستخدم @"+username);
+        ids.push(person.id);
+      }
+      const result = await api("/api/conversations",{method:"POST",body:JSON.stringify({type:"group",title:title.trim(),memberUserIds:ids})});
+      await loadConversations(); openChat(result.conversation.id);
+    } else {
+      const username = prompt("اكتب اسم المستخدم الذي تريد مراسلته:");
+      if (!username?.trim()) return;
+      const normalized = username.trim().replace(/^@/,"").toLowerCase();
+      const found = await api("/api/users/search?q="+encodeURIComponent(normalized));
+      const person = found.users.find(u => u.username.toLowerCase() === normalized);
+      if (!person) { alert("لم يتم العثور على اسم المستخدم."); return; }
+      const result = await api("/api/conversations",{method:"POST",body:JSON.stringify({type:"direct",memberUserIds:[person.id]})});
+      await loadConversations(); openChat(result.conversation.id);
+    }
   } catch (error) { alert(error.message); }
 };
 $("attachBtn").onclick = () => $("fileInput").click();
 $("fileInput").onchange = () => {
   const f = $("fileInput").files[0];
   if (!f) return;
-  if (remoteMode) alert("رفع الملفات إلى التخزين السحابي لم يُفعّل بعد.");
-  else if (active !== null) {
-    const c = chats.find(x => String(x.id) === String(active)), label = "مرفق محلي: "+f.name;
-    c.messages.push({text:label,mine:true,time:nowTime()}); c.preview = "📎 "+f.name; c.time = nowTime();
-    persist(); drawMessages(); drawList();
-  }
+  alert("رفع الصور والملفات السحابي قيد التطوير. لم يتم إرسال هذا الملف.");
+
   $("fileInput").value = "";
 };
 $("accountBtn").onclick = () => {
@@ -224,11 +257,11 @@ $("accountBtn").onclick = () => {
       token = null; currentUser = null; sessionStorage.removeItem("thunder_token");
       socket?.disconnect(); chats = []; active = null; showAuth(true); setAuthMode("login");
     }
-  } else alert("THUNDER Messenger — نسخة تجريبية محلية.");
+  } else alert("سجّل الدخول بعد استعادة الاتصال بالخادم.");
 };
 $("menuBtn").onclick = () => {
   if (remoteMode && currentUser) alert("حسابك: @"+currentUser.username);
-  else alert("THUNDER Messenger — نسخة ويب تجريبية. المحادثات محفوظة على هذا الجهاز فقط.");
+  else alert("الخادم غير متاح. حدّث الصفحة وحاول مجدداً.");
 };
 drawList();
 bootRemote();

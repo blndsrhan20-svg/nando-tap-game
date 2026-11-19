@@ -149,12 +149,34 @@ app.get("/api/conversations", requireAuth, async (req, res) => {
        ORDER BY m.created_at DESC LIMIT 1) AS last_message,
       (SELECT json_agg(json_build_object('id', u.id, 'username', u.username, 'displayName', u.display_name, 'avatarUrl', u.avatar_url))
        FROM conversation_members cm JOIN users u ON u.id = cm.user_id
-       WHERE cm.conversation_id = c.id) AS members
+       WHERE cm.conversation_id = c.id) AS members,
+      (SELECT COUNT(*)::int FROM messages unread
+       WHERE unread.conversation_id = c.id
+         AND unread.sender_id <> $1
+         AND unread.deleted_at IS NULL
+         AND unread.created_at > COALESCE(mine.last_read_at, 'epoch'::timestamptz)) AS unread_count
     FROM conversations c
     JOIN conversation_members mine ON mine.conversation_id = c.id AND mine.user_id = $1
     ORDER BY COALESCE((SELECT MAX(m2.created_at) FROM messages m2 WHERE m2.conversation_id = c.id), c.created_at) DESC
   `, [req.user.id]);
   res.json({ conversations: result.rows });
+});
+
+app.post("/api/conversations/:id/read", requireAuth, async (req, res) => {
+  try {
+    const result = await pool.query(
+      "UPDATE conversation_members SET last_read_at = NOW() WHERE conversation_id = $1 AND user_id = $2 RETURNING last_read_at",
+      [req.params.id, req.user.id]
+    );
+    if (!result.rowCount) return res.status(404).json({ error: "Conversation not found" });
+    io.to(`conversation:${req.params.id}`).emit("conversation:read", {
+      conversationId: req.params.id, userId: req.user.id, lastReadAt: result.rows[0].last_read_at
+    });
+    return res.json({ ok: true, lastReadAt: result.rows[0].last_read_at });
+  } catch (error) {
+    console.error("Read receipt error:", error.message);
+    return res.status(500).json({ error: "Could not update read status" });
+  }
 });
 
 app.post("/api/conversations", requireAuth, async (req, res) => {
@@ -255,6 +277,18 @@ io.on("connection", (socket) => {
   socket.on("conversation:join", async (conversationId) => {
     if (typeof conversationId !== "string" || !(await isMember(conversationId, socket.user.id))) return;
     socket.join(`conversation:${conversationId}`);
+  });
+  socket.on("typing:update", async (payload) => {
+    try {
+      const parsed = z.object({ conversationId: z.string().uuid(), active: z.boolean() }).safeParse(payload);
+      if (!parsed.success || !(await isMember(parsed.data.conversationId, socket.user.id))) return;
+      socket.to(`conversation:${parsed.data.conversationId}`).emit("typing:update", {
+        conversationId: parsed.data.conversationId,
+        userId: socket.user.id,
+        displayName: socket.user.displayName,
+        active: parsed.data.active
+      });
+    } catch {}
   });
   socket.on("message:send", async (payload, callback) => {
     try {

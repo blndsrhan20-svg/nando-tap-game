@@ -7,6 +7,8 @@ import jwt from "jsonwebtoken";
 import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
 import { createServer } from "node:http";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
 import { Server as SocketServer } from "socket.io";
 import { pool } from "./db.js";
 
@@ -266,6 +268,9 @@ io.on("connection", (socket) => {
     }
   });
 });
+
+const webRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+app.use(express.static(webRoot));
 
 app.use((error, _req, res, _next) => {
   if (error.message === "Origin not allowed") return res.status(403).json({ error: "Origin not allowed" });

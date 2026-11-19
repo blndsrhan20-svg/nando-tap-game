@@ -144,7 +144,7 @@ app.get("/api/users/search", requireAuth, async (req, res) => {
 app.get("/api/conversations", requireAuth, async (req, res) => {
   const result = await pool.query(`
     SELECT c.id, c.type, c.title, c.created_at,
-      (SELECT json_build_object('id', m.id, 'body', m.body, 'createdAt', m.created_at, 'senderId', m.sender_id)
+      (SELECT json_build_object('id', m.id, 'body', m.body, 'created_at', m.created_at, 'sender_id', m.sender_id)
        FROM messages m WHERE m.conversation_id = c.id AND m.deleted_at IS NULL
        ORDER BY m.created_at DESC LIMIT 1) AS last_message,
       (SELECT json_agg(json_build_object('id', u.id, 'username', u.username, 'displayName', u.display_name, 'avatarUrl', u.avatar_url))

@@ -4,6 +4,20 @@ const API_ROOT = API_BASE || window.location.origin;
 let chats = [];
 let active = null, filter = "all", mode = "login", remoteMode = false, token = sessionStorage.getItem("thunder_token"), currentUser = null, socket = null;
 
+function applyTheme(theme) {
+  const selected = theme === "light" || theme === "dark" ? theme : (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+  document.documentElement.dataset.theme = selected;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", selected === "light" ? "#ffffff" : "#111827");
+  const button = $("themeToggle");
+  if (button) { button.textContent = selected === "light" ? "☾" : "☀"; button.setAttribute("aria-label", selected === "light" ? "تفعيل المظهر الداكن" : "تفعيل المظهر الفاتح"); }
+}
+applyTheme(localStorage.getItem("thunder_theme") || "system");
+$("themeToggle")?.addEventListener("click", () => {
+  const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  localStorage.setItem("thunder_theme", next);
+  applyTheme(next);
+});
+
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 }
@@ -42,7 +56,7 @@ function connectSocket() {
   if (!window.io || !token) return;
   if (socket) socket.disconnect();
   socket = window.io(API_ROOT, {auth:{token}, transports:["websocket","polling"]});
-  socket.on("connect_error", () => setConnection("الاتصال المباشر غير متاح"));
+  socket.on("connect_error", () => setConnection("الاتصال المباشر منقطع"));
   socket.on("connect", () => setConnection("متصل"));
   socket.on("typing:update", event => {
     if (event.conversationId !== active || event.userId === currentUser?.id) return;
@@ -85,7 +99,7 @@ async function bootRemote() {
   try {
     await api("/health");
     remoteMode = true;
-    setConnection("قاعدة البيانات متصلة");
+    setConnection("متصل بالخادم");
     if (!token) { showAuth(true); return; }
     try {
       const data = await api("/api/auth/me");
@@ -101,7 +115,7 @@ async function bootRemote() {
     chats = [];
     showAuth(true);
     setAuthMode("login");
-    setConnection("الخادم غير متاح");
+    setConnection("غير متصل — جارٍ إعادة المحاولة");
     $("authError").textContent = "تعذر الاتصال بخادم THUNDER. حدّث الصفحة بعد قليل؛ لن نعرض محادثات وهمية أو نحفظ رسائلك محلياً.";
     drawList();
   }
@@ -133,7 +147,7 @@ $("authForm").addEventListener("submit", async event => {
 
 function drawList() {
   const q = $("search").value.trim().toLowerCase();
-  const list = chats.filter(c => (filter==="all" || (filter==="unread"&&c.unread) || (filter==="groups"&&c.group)) && c.name.toLowerCase().includes(q));
+  const list = chats.filter(c => (filter==="all" || (filter==="unread"&&c.unread) || (filter==="groups"&&c.group) || (filter==="personal"&&!c.group) || (filter==="channels"&&c.channel)) && c.name.toLowerCase().includes(q));
   $("chatList").innerHTML = list.length ? list.map(c =>
     `<div class="chat ${active===c.id?"selected":""}" data-id="${escapeHtml(c.id)}"><div class="avatar" style="background:${c.color}">${escapeHtml(c.initial)}</div><div class="chatinfo"><div class="chatline"><b>${escapeHtml(c.name)}</b><span class="time">${escapeHtml(c.time)}</span></div><div class="chatline"><span class="preview">${escapeHtml(c.preview)}</span>${c.unread?`<span class="badge">${c.unread}</span>`:""}</div></div></div>`
   ).join("") : '<div class="empty">لا توجد محادثات</div>';
@@ -178,8 +192,8 @@ $("sendForm").addEventListener("submit", async event => {
       c.preview = text; c.time = nowTime();
     } catch (error) { setConnection(error.message); return; }
   } else {
-    c.messages.push({text,mine:true,time:nowTime()}); c.preview = text; c.time = nowTime();
-    persist();
+    setConnection("غير متصل — لم تُرسل الرسالة");
+    return;
   }
   $("messageInput").value = ""; drawMessages(); drawList();
 });

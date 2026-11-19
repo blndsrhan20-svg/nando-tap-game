@@ -199,12 +199,8 @@ $("attachBtn").onclick = () => $("fileInput").click();
 $("fileInput").onchange = () => {
   const f = $("fileInput").files[0];
   if (!f) return;
-  if (remoteMode) alert("رفع الملفات إلى التخزين السحابي لم يُفعّل بعد.");
-  else if (active !== null) {
-    const c = chats.find(x => String(x.id) === String(active)), label = "مرفق محلي: "+f.name;
-    c.messages.push({text:label,mine:true,time:nowTime()}); c.preview = "📎 "+f.name; c.time = nowTime();
-    persist(); drawMessages(); drawList();
-  }
+  alert("رفع الصور والملفات السحابي قيد التطوير. لم يتم إرسال هذا الملف.");
+
   $("fileInput").value = "";
 };
 $("accountBtn").onclick = () => {

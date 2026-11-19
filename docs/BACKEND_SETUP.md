@@ -33,4 +33,6 @@ The backend is a standalone Node.js API using PostgreSQL. It is intentionally se
 
 ## Current scope and limitations
 
-This adds the database schema and backend API, but does not provision a hosted database or deploy the API. No live URL or production credentials have been configured. File upload/storage, push notifications, voice/video calls, end-to-end encryption, account recovery, and frontend sign-in/remote-chat wiring remain separate work. Do not describe these as active until implemented and tested.
+The web UI now includes sign-in and registration screens and switches to the remote API when the backend health endpoint is reachable. The server also serves the web app and the Socket.IO client from the same origin. The local demo remains available if no backend is reachable.
+
+A hosted database and API have **not** been provisioned or deployed yet. No live URL or production credentials are configured. File upload/storage, push notifications, voice/video calls, end-to-end encryption, account recovery, group creation UI, and production load/security testing remain outstanding. Do not describe these as active until implemented and tested.

@@ -13,7 +13,10 @@
 - Telegram Web A: https://github.com/Ajaxy/telegram-tt
 - TDLib: https://github.com/tdlib/td
 - Telegram iOS: https://github.com/TelegramMessenger/Telegram-iOS
-- Telegram Android: https://github.com/DrKLO/Telegram
+- Telegram Android: https://github.com/TelegramMessenger/Telegram-Android
+- tgcalls (مراجع هندسة المكالمات): https://github.com/TelegramMessenger/tgcalls
+- MTProto Engine: https://github.com/TelegramMessenger/mtproto-engine
+- خريطة ربط المصادر داخل المشروع: [docs/SOURCE_INTEGRATION.md](docs/SOURCE_INTEGRATION.md)
 - الصفحة الرسمية التي تجمع المصادر والتراخيص: https://telegram.org/apps
 
 ## التراخيص والتنبيهات

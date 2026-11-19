@@ -52,10 +52,10 @@ function publicUser(row) {
   return { id: row.id, username: row.username, displayName: row.display_name, email: row.email, avatarUrl: row.avatar_url };
 }
 function issueToken(user) {
-  return jwt.sign({ sub: user.id }, jwtSecret, { expiresIn: "12h", issuer: "nando-api", audience: "nando-client" });
+  return jwt.sign({ sub: user.id }, jwtSecret, { expiresIn: "12h", issuer: "thunder-api", audience: "thunder-client" });
 }
 async function authenticateToken(token) {
-  const decoded = jwt.verify(token, jwtSecret, { issuer: "nando-api", audience: "nando-client" });
+  const decoded = jwt.verify(token, jwtSecret, { issuer: "thunder-api", audience: "thunder-client" });
   const result = await pool.query(
     "SELECT id, username, display_name, email, avatar_url FROM users WHERE id = $1",
     [decoded.sub]
@@ -84,9 +84,9 @@ async function isMember(conversationId, userId) {
 app.get("/health", async (_req, res) => {
   try {
     await pool.query("SELECT 1");
-    res.json({ ok: true, service: "nando-api", database: "connected" });
+    res.json({ ok: true, service: "thunder-api", database: "connected" });
   } catch {
-    res.status(503).json({ ok: false, service: "nando-api", database: "unavailable" });
+    res.status(503).json({ ok: false, service: "thunder-api", database: "unavailable" });
   }
 });
 
@@ -282,4 +282,4 @@ app.use((error, _req, res, _next) => {
   res.status(500).json({ error: "Internal server error" });
 });
 
-httpServer.listen(port, () => console.log(`NANDO API listening on port ${port}`));
+httpServer.listen(port, () => console.log(`THUNDER API listening on port ${port}`));

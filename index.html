@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#0b1422">
-  <meta name="color-scheme" content="dark">
+  <meta name="color-scheme" content="dark light">
   <meta name="description" content="THUNDER Messenger — مراسلة عربية">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="style.css">
@@ -13,7 +13,7 @@
 <body>
   <section class="auth-screen hidden" id="authScreen">
     <div class="auth-card">
-      <div class="welcome-logo">⚡</div>
+      <div class="welcome-logo" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M36 4 13 35h15l-2 25 25-34H35z"/></svg></div>
       <h1>THUNDER</h1>
       <p class="auth-subtitle">مراسلاتك في مكان واحد</p>
       <div class="auth-tabs">
@@ -37,21 +37,21 @@
     <aside class="sidebar">
       <header class="topbar">
         <button class="icon" id="menuBtn" aria-label="القائمة">☰</button>
-        <div class="brand"><span class="brandmark">⚡</span><b>THUNDER</b></div>
-        <button class="icon" id="newChat" aria-label="محادثة جديدة">＋</button>
+        <div class="brand"><span class="brandmark" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M36 4 13 35h15l-2 25 25-34H35z"/></svg></span><b>THUNDER</b></div>
+        <button class="icon" id="themeToggle" aria-label="تبديل المظهر" title="تبديل المظهر">◐</button><button class="icon" id="newChat" aria-label="محادثة جديدة">＋</button>
       </header>
       <div class="search"><span>⌕</span><input id="search" placeholder="بحث" autocomplete="off"></div>
       <nav class="filters">
         <button class="filter active" data-filter="all">الكل</button>
         <button class="filter" data-filter="unread">غير مقروءة</button>
-        <button class="filter" data-filter="groups">مجموعات</button>
+        <button class="filter" data-filter="personal">شخصية</button><button class="filter" data-filter="groups">مجموعات</button><button class="filter" data-filter="channels">قنوات</button>
       </nav>
       <div class="chatlist" id="chatList"></div>
-      <footer class="sidefoot"><span class="online-dot"></span><span id="connectionLabel">نسخة تجريبية محلية</span></footer>
+      <footer class="sidefoot"><span class="online-dot"></span><span id="connectionLabel">جاري الاتصال...</span></footer>
     </aside>
     <main class="conversation">
       <section class="welcome" id="welcome">
-        <div class="welcome-logo">⚡</div>
+        <div class="welcome-logo" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M36 4 13 35h15l-2 25 25-34H35z"/></svg></div>
         <h1>مرحباً بك في THUNDER</h1>
         <p>مساحة آمنة وسريعة تجمع محادثاتك وأفكارك في مكان واحد.</p>
         <small>اختر محادثة للبدء</small>

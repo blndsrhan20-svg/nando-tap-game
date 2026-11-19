@@ -1,16 +1,16 @@
 const $ = (id) => document.getElementById(id);
-const STORE_KEY = "nando_messenger_v1";
-const API_BASE = (window.NANDO_CONFIG?.apiUrl || "").replace(/\/$/, "");
+const STORE_KEY = "thunder_messenger_v1";
+const API_BASE = (window.THUNDER_CONFIG?.apiUrl || "").replace(/\/$/, "");
 const API_ROOT = API_BASE || window.location.origin;
 const seedChats = [
-  {id:1,name:"فريق NANDO",initial:"N",color:"#356b83",group:true,unread:2,time:"23:40",preview:"أهلاً بالجميع!",messages:[{text:"أهلاً بالجميع!",mine:false,time:"23:40"}]},
+  {id:1,name:"فريق THUNDER",initial:"N",color:"#356b83",group:true,unread:2,time:"23:40",preview:"أهلاً بالجميع!",messages:[{text:"أهلاً بالجميع!",mine:false,time:"23:40"}]},
   {id:2,name:"أحمد",initial:"أ",color:"#72548c",group:false,unread:1,time:"22:18",preview:"شلونك؟",messages:[{text:"شلونك؟",mine:false,time:"22:18"}]},
   {id:3,name:"ملاحظاتي",initial:"✎",color:"#47745e",group:false,unread:0,time:"أمس",preview:"مساحة خاصة لحفظ أفكارك",messages:[]}
 ];
 let saved = {};
 try { saved = JSON.parse(localStorage.getItem(STORE_KEY) || "{}") || {}; } catch {}
 let chats = Array.isArray(saved.chats) ? saved.chats : seedChats;
-let active = null, filter = "all", mode = "login", remoteMode = false, token = sessionStorage.getItem("nando_token"), currentUser = null, socket = null;
+let active = null, filter = "all", mode = "login", remoteMode = false, token = sessionStorage.getItem("thunder_token"), currentUser = null, socket = null;
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
@@ -96,7 +96,7 @@ async function bootRemote() {
       connectSocket();
       await loadConversations();
     } catch {
-      token = null; sessionStorage.removeItem("nando_token"); showAuth(true);
+      token = null; sessionStorage.removeItem("thunder_token"); showAuth(true);
     }
   } catch {
     remoteMode = false;
@@ -124,7 +124,7 @@ $("authForm").addEventListener("submit", async event => {
     }
     const result = await api(endpoint,{method:"POST",body:JSON.stringify(payload)});
     token = result.token; currentUser = result.user;
-    sessionStorage.setItem("nando_token",token);
+    sessionStorage.setItem("thunder_token",token);
     $("authForm").reset();
     showAuth(false); connectSocket(); await loadConversations();
   } catch (error) { $("authError").textContent = error.message; }
@@ -221,14 +221,14 @@ $("fileInput").onchange = () => {
 $("accountBtn").onclick = () => {
   if (remoteMode && currentUser) {
     if (confirm("الحساب: @"+currentUser.username+"\nهل تريد تسجيل الخروج؟")) {
-      token = null; currentUser = null; sessionStorage.removeItem("nando_token");
+      token = null; currentUser = null; sessionStorage.removeItem("thunder_token");
       socket?.disconnect(); chats = []; active = null; showAuth(true); setAuthMode("login");
     }
-  } else alert("NANDO Messenger — نسخة تجريبية محلية.");
+  } else alert("THUNDER Messenger — نسخة تجريبية محلية.");
 };
 $("menuBtn").onclick = () => {
   if (remoteMode && currentUser) alert("حسابك: @"+currentUser.username);
-  else alert("NANDO Messenger — نسخة ويب تجريبية. المحادثات محفوظة على هذا الجهاز فقط.");
+  else alert("THUNDER Messenger — نسخة ويب تجريبية. المحادثات محفوظة على هذا الجهاز فقط.");
 };
 drawList();
 bootRemote();

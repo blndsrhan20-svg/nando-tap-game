@@ -270,7 +270,11 @@ io.on("connection", (socket) => {
 });
 
 const webRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-app.use(express.static(webRoot));
+app.use((req, res, next) => {
+  if (/^\\/(?:server|docs|\\.git|\\.env|package\\.json|README\\.md|\\.gitmodules)(?:\\/|$)/i.test(req.path)) return res.sendStatus(404);
+  next();
+});
+app.use(express.static(webRoot, { dotfiles: "deny", index: "index.html" }));
 
 app.use((error, _req, res, _next) => {
   if (error.message === "Origin not allowed") return res.status(403).json({ error: "Origin not allowed" });

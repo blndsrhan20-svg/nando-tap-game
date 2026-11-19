@@ -13,7 +13,7 @@
 - Telegram Web A: https://github.com/Ajaxy/telegram-tt
 - TDLib: https://github.com/tdlib/td
 - Telegram iOS: https://github.com/TelegramMessenger/Telegram-iOS
-- Telegram Android: https://github.com/ DrKLO/Telegram
+- Telegram Android: https://github.com/DrKLO/Telegram
 - الصفحة الرسمية التي تجمع المصادر والتراخيص: https://telegram.org/apps
 
 ## التراخيص والتنبيهات
